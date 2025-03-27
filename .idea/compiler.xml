@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="yueyun-base-skywalking" />
+        <module name="yueyun-base-ip" />
+        <module name="yueyun-base-excel" />
+        <module name="yueyun-base-mq" />
+        <module name="yueyun-base-datapermission" />
+        <module name="yueyun-base-redis" />
+        <module name="yueyun-base-mybatisplus" />
+        <module name="yueyun-base-common" />
+        <module name="yueyun-base-job" />
+        <module name="yueyun-base-ai" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>
