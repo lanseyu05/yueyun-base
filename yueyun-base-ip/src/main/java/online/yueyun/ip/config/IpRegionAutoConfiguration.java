@@ -1,6 +1,8 @@
 package online.yueyun.ip.config;
 
 
+import cn.hutool.cache.CacheUtil;
+import cn.hutool.cache.impl.LRUCache;
 import lombok.extern.slf4j.Slf4j;
 import online.yueyun.ip.service.IpRegionService;
 import online.yueyun.ip.service.impl.Ip2RegionServiceImpl;
@@ -67,7 +69,7 @@ public class IpRegionAutoConfiguration {
             String tmpPath = System.getProperty("java.io.tmpdir") + "/ip2region.xdb";
             Path path = Paths.get(tmpPath);
             Files.write(path, dbBytes);
-            return Searcher.newWithFile(tmpPath);
+            return Searcher.newWithFileOnly(tmpPath);
         }
     }
 

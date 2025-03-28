@@ -7,9 +7,11 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="yueyun-base-skywalking" />
+        <module name="yueyun-base-storage" />
         <module name="yueyun-base-ip" />
         <module name="yueyun-base-excel" />
         <module name="yueyun-base-mq" />
+        <module name="yueyun-base-message" />
         <module name="yueyun-base-datapermission" />
         <module name="yueyun-base-redis" />
         <module name="yueyun-base-mybatisplus" />

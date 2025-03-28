@@ -39,8 +39,8 @@ public class EasyExcelServiceImpl implements ExcelService {
     public <T> void export(HttpServletResponse response, List<T> data, Class<T> clazz, String fileName) {
         try {
             // 检查数据量，防止OOM
-            if (data != null && data.size() > properties.getMaxExportRows()) {
-                throw new IllegalArgumentException("数据量过大，超过最大导出行数限制：" + properties.getMaxExportRows());
+            if (data != null && data.size() > properties.getWrite().getMaxSheetRows()) {
+                throw new IllegalArgumentException("数据量过大，超过最大导出行数限制：" + properties.getWrite().getMaxSheetRows());
             }
 
             // 设置响应头
@@ -100,7 +100,7 @@ public class EasyExcelServiceImpl implements ExcelService {
             }
 
             // 读取Excel
-            EasyExcel.read(inputStream, clazz, new PageReadListener<T>(dataList::addAll, properties.getMaxImportRows()))
+            EasyExcel.read(inputStream, clazz, new PageReadListener<T>(dataList::addAll, properties.getRead().getBatchSize())
                     .headRowNumber(headRowNumber)
                     .sheet()
                     .doRead();

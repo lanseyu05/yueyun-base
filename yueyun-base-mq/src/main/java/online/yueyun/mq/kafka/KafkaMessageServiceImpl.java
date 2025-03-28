@@ -182,11 +182,8 @@ public class KafkaMessageServiceImpl extends AbstractMessageService {
         String actualGroup = StringUtils.hasText(group) ? group : properties.getDefaultGroup();
 
         // 设置消费者监听器
-        ContainerProperties containerProperties = container.getContainerProperties();
-        containerProperties.setGroupId(actualGroup);
-        //todo 设置主题
-//        containerProperties.setTopicPattern(Pattern.compile(actualTopic));
-        containerProperties.setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        container.getContainerProperties().setGroupId(actualGroup);
+        container.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
 
         // 注册消息监听器
         container.setupMessageListener((MessageListener<String, byte[]>) record -> {

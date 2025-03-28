@@ -37,19 +37,19 @@ import java.util.Map;
 public class KafkaConfiguration {
 
     /**
-     * 配置Kafka生产者工厂
+     * 配置生产者工厂
      */
     @Bean
     @ConditionalOnMissingBean(ProducerFactory.class)
     public ProducerFactory<String, byte[]> kafkaProducerFactory(MqProperties properties) {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
-        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        configProps.put(ProducerConfig.RETRIES_CONFIG, properties.getKafka().getProducer().getRetries());
-        configProps.put(ProducerConfig.BATCH_SIZE_CONFIG, properties.getKafka().getProducer().getBatchSize());
-        configProps.put(ProducerConfig.BUFFER_MEMORY_CONFIG, properties.getKafka().getProducer().getBufferMemory());
-        return new DefaultKafkaProducerFactory<>(configProps);
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
+        configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+        configs.put(ProducerConfig.RETRIES_CONFIG, properties.getKafka().getProducer().getRetries());
+        configs.put(ProducerConfig.BATCH_SIZE_CONFIG, properties.getKafka().getProducer().getBatchSize());
+        configs.put(ProducerConfig.BUFFER_MEMORY_CONFIG, properties.getKafka().getProducer().getBufferMemory());
+        return new DefaultKafkaProducerFactory<>(configs);
     }
 
     /**
@@ -62,56 +62,57 @@ public class KafkaConfiguration {
     }
 
     /**
-     * 配置Kafka消费者工厂
+     * 配置消费者工厂
      */
     @Bean
     @ConditionalOnMissingBean(ConsumerFactory.class)
     public ConsumerFactory<String, byte[]> kafkaConsumerFactory(MqProperties properties) {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
-        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
-        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, properties.getKafka().getConsumer().isEnableAutoCommit());
-        configProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, properties.getKafka().getConsumer().getAutoCommitIntervalMs());
-        configProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, properties.getKafka().getConsumer().getSessionTimeoutMs());
-        return new DefaultKafkaConsumerFactory<>(configProps);
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
+        configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
+        configs.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        return new DefaultKafkaConsumerFactory<>(configs);
     }
 
     /**
-     * 配置Kafka监听器容器工厂
+     * 配置消费者容器工厂
      */
     @Bean
     @ConditionalOnMissingBean(ConcurrentKafkaListenerContainerFactory.class)
     public ConcurrentKafkaListenerContainerFactory<String, byte[]> kafkaListenerContainerFactory(
-            ConsumerFactory<String, byte[]> consumerFactory,
-            MqProperties properties) {
+            ConsumerFactory<String, byte[]> consumerFactory) {
         ConcurrentKafkaListenerContainerFactory<String, byte[]> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
-        factory.setConcurrency(properties.getConsumerConcurrency());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
         return factory;
     }
-    
+
     /**
-     * 配置Kafka消息监听容器
+     * 配置消费者容器
      */
     @Bean
     @ConditionalOnMissingBean(ConcurrentMessageListenerContainer.class)
     public ConcurrentMessageListenerContainer<String, byte[]> kafkaListenerContainer(
             ConcurrentKafkaListenerContainerFactory<String, byte[]> factory,
             MqProperties properties) {
+        ContainerProperties containerProperties = new ContainerProperties(properties.getDefaultTopic());
+        containerProperties.setGroupId(properties.getDefaultGroup());
+        containerProperties.setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        
         ConcurrentMessageListenerContainer<String, byte[]> container = 
-                factory.createContainer(properties.getDefaultTopic());
-        container.setConcurrency(properties.getConsumerConcurrency());
+            (ConcurrentMessageListenerContainer<String, byte[]>) factory.createContainer(properties.getDefaultTopic());
+        container.setAutoStartup(false);
         return container;
     }
 
     /**
-     * 配置Kafka消息服务实现
+     * 配置消息服务
      */
     @Bean
     @ConditionalOnMissingBean(MessageService.class)
-    public MessageService messageService(
+    public MessageService kafkaMessageService(
             KafkaTemplate<String, byte[]> kafkaTemplate,
             ConcurrentMessageListenerContainer<String, byte[]> container,
             MqProperties properties,
@@ -119,10 +120,10 @@ public class KafkaConfiguration {
             MessageConsumedService messageConsumedService) {
         log.info("初始化Kafka消息服务: bootstrapServers={}", properties.getKafka().getBootstrapServers());
         return new KafkaMessageServiceImpl(
-                kafkaTemplate, 
-                container, 
-                properties, 
-                messageRecordService, 
+                kafkaTemplate,
+                container,
+                properties,
+                messageRecordService,
                 messageConsumedService);
     }
 } 

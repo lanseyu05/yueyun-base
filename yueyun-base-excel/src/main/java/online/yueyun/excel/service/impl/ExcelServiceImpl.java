@@ -44,7 +44,7 @@ public class ExcelServiceImpl implements ExcelService {
 
         ExcelWriterBuilder writerBuilder = EasyExcel.write(outputStream, clazz)
                 .autoCloseStream(properties.getWrite().isAutoCloseStream())
-                .sheet(sheetName);
+                ;
 
         // 自动调整列宽
         if (properties.getWrite().isUseDefaultStyle()) {
@@ -54,7 +54,7 @@ public class ExcelServiceImpl implements ExcelService {
         // 分批写入，防止OOM
         int maxSheetRows = properties.getWrite().getMaxSheetRows();
         if (data.size() <= maxSheetRows) {
-            writerBuilder.doWrite(data);
+            writerBuilder.sheet(sheetName).doWrite(data);
         } else {
             int sheetNo = 1;
             for (int i = 0; i < data.size(); i += maxSheetRows) {
@@ -161,7 +161,7 @@ public class ExcelServiceImpl implements ExcelService {
 
         @Override
         public void onException(Exception exception, com.alibaba.excel.context.AnalysisContext context) throws Exception {
-            ReadContext readContext = new ReadContext() {
+            ReadListener.ReadContext readContext = new ReadListener.ReadContext() {
                 @Override
                 public int getRowIndex() {
                     return context.readRowHolder().getRowIndex();
