@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  online.yueyun.storage.config.StorageAutoConfiguration 

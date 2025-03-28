@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>online.yueyun</groupId>
+        <artifactId>yueyun-base</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>yueyun-base-ai</artifactId>
+    <version>1.0.0</version>
+    <name>yueyun-base-ai</name>
+    <description>悦芸AI基础组件库，提供AI接入和常用功能</description>
+
+    <dependencies>
+        <!-- Spring Boot 基础依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- Spring AI 依赖 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter</artifactId>
+        </dependency>
+        
+        <!-- 基础公共模块依赖 -->
+        <dependency>
+            <groupId>online.yueyun</groupId>
+            <artifactId>yueyun-base-common</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        
+        <!-- 测试依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

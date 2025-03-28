@@ -1,0 +1,21 @@
+yueyun:
+  storage:
+    # 存储类型：minio, aliyun-oss
+    type: minio
+    
+    # MinIO配置
+    minio:
+      endpoint: http://localhost:9000
+      access-key: minioadmin
+      secret-key: minioadmin
+      default-bucket-name: yueyun
+      connect-timeout: 10
+      secure: false
+      
+    # 阿里云OSS配置
+    aliyun-oss:
+      endpoint: https://oss-cn-hangzhou.aliyuncs.com
+      access-key-id: your-access-key-id
+      access-key-secret: your-access-key-secret
+      default-bucket-name: yueyun
+      connect-timeout: 10 

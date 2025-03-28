@@ -1,0 +1,16 @@
+# AI功能配置
+yueyun.ai.enabled=true
+# 是否使用自定义服务实现，默认false使用默认实现
+yueyun.ai.use-custom-service=false
+yueyun.ai.api-key=your_api_key_here
+yueyun.ai.api-secret=your_api_secret_here
+
+# 模型配置
+yueyun.ai.model.default-model=qwen2
+yueyun.ai.model.max-output-tokens=2048
+yueyun.ai.model.temperature=0.7
+yueyun.ai.model.top-p=0.9
+
+# Spring AI 配置
+spring.ai.embedding.documentEmbedding.batchSize=5
+spring.ai.embedding.documentEmbedding.dimensions=1536 
