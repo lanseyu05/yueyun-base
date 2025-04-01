@@ -12,196 +12,159 @@ MyBatisPlus模块是YueYun基础框架的一部分，基于MyBatis-Plus扩展开
 - 扩展接口：提供扩展的BaseService，增强常用操作
 - 通过注解方式快速启用
 
-## 快速开始
+## 1. 最小化接入方案
 
-### 1. 添加依赖
-
+### 1.1 添加依赖
 ```xml
 <dependency>
     <groupId>online.yueyun</groupId>
     <artifactId>yueyun-base-mybatisplus</artifactId>
-    <version>1.0.0</version>
+    <version>${project.version}</version>
 </dependency>
 ```
 
-### 2. 启用MyBatisPlus功能
+### 1.2 基础配置
+```yaml
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/your_database?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: your_username
+    password: your_password
 
-在应用的启动类上添加`@EnableMybatisPlus`注解：
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: online.yueyun.**.model
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+```
 
+### 1.3 启用MyBatis-Plus配置
 ```java
-@SpringBootApplication
-@EnableMybatisPlus
-public class YourApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(YourApplication.class, args);
+@Configuration
+@MapperScan("online.yueyun.**.mapper")
+public class MybatisPlusConfig {
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        // 分页插件
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        // 乐观锁插件
+        interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+        return interceptor;
     }
 }
 ```
 
-### 3. 配置MyBatisPlus属性
+## 2. 详细进阶配置
 
-在`application.yml`或`application.properties`中配置MyBatisPlus属性：
-
-```yaml
-yueyun:
-  mybatis-plus:
-    # 是否启用
-    enabled: true
-    # 是否启用SQL打印
-    sql-log: false
-    # 是否启用性能分析插件（生产环境建议关闭）
-    performance-interceptor: false
-    # 是否启用乐观锁插件
-    optimistic-lock: true
-    # 是否启用防止全表更新与删除插件
-    block-attack: true
-    # 字段填充配置
-    field-fill:
-      # 是否启用字段自动填充
-      enabled: true
-      # 创建人字段名
-      create-user-field: createUser
-      # 创建时间字段名
-      create-time-field: createTime
-      # 更新人字段名
-      update-user-field: updateUser
-      # 更新时间字段名
-      update-time-field: updateTime
-    # 分页配置
-    pagination:
-      # 是否启用分页插件
-      enabled: true
-      # 数据库类型
-      db-type: mysql
-      # 分页插件优化
-      optimize-join: false
-      # 最大单页限制数量，默认 1000 条，-1 不受限制
-      max-limit: 1000
-    # 多租户配置
-    tenant:
-      # 是否启用多租户插件
-      enabled: false
-      # 租户ID字段名
-      tenant-id-column: tenant_id
-      # 忽略表（不进行租户条件过滤的表）
-      ignore-tables:
-        - sys_user
-        - sys_menu
-      # 忽略SQL（不进行租户条件过滤的SQL）
-      ignore-sqls:
-```
-
-### 4. 使用BaseEntity
-
-所有实体类继承BaseEntity，自动获取通用字段：
-
+### 2.1 实体类配置
 ```java
 @Data
 @TableName("sys_user")
-public class User extends BaseEntity {
-    
-    @TableId(type = IdType.ASSIGN_ID)
+public class User {
+    @TableId(type = IdType.AUTO)
     private Long id;
     
     private String username;
     
     private String password;
     
-    private String email;
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
     
-    private String phone;
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
     
-    // createUser, createTime, updateUser, updateTime, deleted, version 继承自 BaseEntity
+    @TableLogic
+    private Integer deleted;
 }
 ```
 
-### 5. 使用BaseService
-
-创建Service接口和实现类：
-
-```java
-public interface UserService extends BaseService<User> {
-    // 添加自定义方法
-}
-```
-
-```java
-@Service
-public class UserServiceImpl extends BaseServiceImpl<UserMapper, User> implements UserService {
-    // 实现自定义方法
-}
-```
-
-### 6. 高级用法示例
-
-#### 6.1 安全操作
-
-使用安全操作方法，支持字段校验和权限检查：
-
-```java
-@Service
-public class UserServiceImpl extends BaseServiceImpl<UserMapper, User> implements UserService {
-    
-    @Override
-    protected void validateEntity(User user) {
-        // 自定义字段校验逻辑
-        if (user.getUsername() == null || user.getUsername().length() < 3) {
-            throw new IllegalArgumentException("用户名不能少于3个字符");
-        }
-    }
-    
-    @Override
-    protected void checkPermission(Serializable id) {
-        // 自定义权限检查逻辑
-        User currentUser = getCurrentUser();
-        if (!isAdmin(currentUser)) {
-            throw new AccessDeniedException("无权删除用户");
-        }
-    }
-}
-```
-
-#### 6.2 获取有序列表
-
-按ID顺序获取实体列表：
-
-```java
-List<Long> userIds = Arrays.asList(5L, 1L, 3L);
-List<User> orderedUsers = userService.listByIdsOrdered(userIds);
-// 返回的用户列表顺序与userIds顺序相同：5, 1, 3
-```
-
-#### 6.3 获取Map
-
-将实体列表转换为映射：
-
-```java
-// 将用户列表转换为 ID -> 用户名 的映射
-Map<Long, String> userMap = userService.getMap("id", "username");
-
-// 带条件的映射
-QueryWrapper<User> wrapper = new QueryWrapper<User>().eq("status", 1);
-Map<Long, String> activeUserMap = userService.getMap("id", "username", wrapper);
-```
-
-#### 6.4 多租户支持
-
-自定义多租户实现：
-
+### 2.2 自动填充配置
 ```java
 @Component
-public class CustomTenantHandler implements TenantHandler {
-    
+public class MybatisPlusFillHandler implements MetaObjectHandler {
     @Override
-    public Long getTenantId() {
-        // 从当前登录用户或请求上下文中获取租户ID
-        return SecurityContextHolder.getContext().getTenantId();
+    public void insertFill(MetaObject metaObject) {
+        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
     }
-    
+
     @Override
-    public boolean ignoreTable(String tableName) {
-        // 自定义忽略表规则
-        return "sys_config".equals(tableName) || "sys_dict".equals(tableName);
+    public void updateFill(MetaObject metaObject) {
+        this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+    }
+}
+```
+
+### 2.3 多租户配置
+```java
+@Configuration
+public class TenantConfig {
+    @Bean
+    public TenantLineHandler tenantLineHandler() {
+        return new CustomTenantLineHandler();
+    }
+}
+```
+
+### 2.4 分页查询
+```java
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+    public IPage<User> getUserList(Page<User> page, UserQuery query) {
+        return baseMapper.selectPage(page, new LambdaQueryWrapper<User>()
+            .like(StringUtils.isNotBlank(query.getUsername()), User::getUsername, query.getUsername())
+            .eq(query.getStatus() != null, User::getStatus, query.getStatus())
+            .orderByDesc(User::getCreateTime));
+    }
+}
+```
+
+### 2.5 条件构造器
+```java
+// 查询条件
+LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<User>()
+    .eq(User::getStatus, 1)
+    .like(User::getUsername, "test")
+    .in(User::getId, Arrays.asList(1, 2, 3))
+    .orderByDesc(User::getCreateTime);
+
+// 更新条件
+LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<User>()
+    .eq(User::getId, 1)
+    .set(User::getStatus, 0);
+```
+
+### 2.6 批量操作
+```java
+// 批量插入
+List<User> userList = new ArrayList<>();
+saveBatch(userList);
+
+// 批量更新
+updateBatchById(userList);
+
+// 批量删除
+removeByIds(Arrays.asList(1, 2, 3));
+```
+
+### 2.7 性能分析
+```java
+@Configuration
+public class MybatisPlusConfig {
+    @Bean
+    public PerformanceInterceptor performanceInterceptor() {
+        PerformanceInterceptor interceptor = new PerformanceInterceptor();
+        interceptor.setMaxTime(1000);
+        return interceptor;
     }
 }
 ```

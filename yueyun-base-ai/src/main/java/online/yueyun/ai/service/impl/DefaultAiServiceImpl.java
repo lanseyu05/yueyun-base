@@ -1,70 +1,141 @@
 package online.yueyun.ai.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import online.yueyun.ai.config.AiProperties;
+import online.yueyun.ai.model.AiRequest;
+import online.yueyun.ai.model.AiResponse;
 import online.yueyun.ai.service.AiService;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 默认AI服务实现类，提供基础功能实现
- * 使用@Primary和@ConditionalOnMissingBean注解，
- * 允许用户通过自定义实现类来覆盖默认行为
- * 
- * @author yueyun
+ * 默认AI服务实现类
  */
 @Slf4j
 @Service
-@Primary
-@ConditionalOnMissingBean(name = "customAiService")
 public class DefaultAiServiceImpl implements AiService {
 
     @Autowired
-    private AiProperties aiProperties;
+    private ChatClient chatClient;
+
+    @Autowired(required = false)
+    private EmbeddingClient embeddingClient;
+
+    @Override
+    public AiResponse chat(AiRequest request) {
+        try {
+            // 1. 参数校验
+            if (request == null || !StringUtils.hasText(request.getPrompt())) {
+                return AiResponse.error("请求参数无效");
+            }
+
+            // 2. 构建提示词
+            PromptTemplate promptTemplate = new PromptTemplate(request.getPrompt());
+            Prompt prompt = promptTemplate.create(request.getVariables());
+
+            // 3. 调用AI服务
+            ChatResponse response = chatClient.call(prompt);
+
+            // 4. 处理响应
+            if (response == null || response.getResult() == null) {
+                return AiResponse.error("AI服务返回结果为空");
+            }
+
+            return AiResponse.success(response.getResult().getOutput().getContent());
+        } catch (Exception e) {
+            log.error("AI服务调用失败: {}", e.getMessage(), e);
+            return AiResponse.error("AI服务调用失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Double> getEmbedding(String text) {
+        try {
+            if (!StringUtils.hasText(text)) {
+                throw new IllegalArgumentException("文本内容不能为空");
+            }
+
+            Document document = new Document(text);
+            return embeddingClient.embed(document);
+        } catch (Exception e) {
+            log.error("获取文本向量失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取文本向量失败", e);
+        }
+    }
 
     @Override
     public String generateText(String prompt) {
-        log.info("默认实现 - 生成文本，提示词: {}", prompt);
-        return "默认实现的文本生成功能";
+        try {
+            List<Message> messages = new ArrayList<>();
+            messages.add(new SystemMessage("你是一个专业的文本生成助手，请根据提示词生成高质量的文本内容。"));
+            messages.add(new UserMessage(prompt));
+
+            ChatResponse response = chatClient.call(new Prompt(messages));
+            return response.getResult().getOutput().getContent();
+        } catch (Exception e) {
+            log.error("生成文本失败", e);
+            throw new RuntimeException("生成文本失败", e);
+        }
     }
 
     @Override
     public String generateTextWithTemplate(String template, Map<String, Object> variables) {
-        log.info("默认实现 - 使用模板生成文本，模板: {}, 变量: {}", template, variables);
-        return "默认实现的模板文本生成功能";
+        try {
+            PromptTemplate promptTemplate = new PromptTemplate(template);
+            Prompt prompt = promptTemplate.create(variables);
+            
+            ChatResponse response = chatClient.call(prompt);
+            return response.getResult().getOutput().getContent();
+        } catch (Exception e) {
+            log.error("通过模板生成文本失败", e);
+            throw new RuntimeException("通过模板生成文本失败", e);
+        }
     }
 
-    @Override
-    public String chat(List<Map<String, String>> messages) {
-        log.info("默认实现 - 聊天对话，消息数量: {}", messages.size());
-        return "默认实现的聊天对话功能";
-    }
-
-    @Override
-    public List<Float> embedding(String text) {
-        log.info("默认实现 - 生成文本嵌入向量，文本长度: {}", text.length());
-        return List.of(0.1f, 0.2f, 0.3f, 0.4f);
-    }
-    
     @Override
     public String summarize(String text) {
-        log.info("默认实现 - 生成文本摘要，文本长度: {}", text.length());
-        return "默认实现的文本摘要功能";
+        try {
+            Map<String, Object> variables = Map.of("text", text);
+            return generateTextWithTemplate("请对以下文本进行摘要：{text}", variables);
+        } catch (Exception e) {
+            log.error("文本摘要生成失败", e);
+            throw new RuntimeException("文本摘要生成失败", e);
+        }
     }
-    
+
     @Override
     public Map<String, Float> sentimentAnalysis(String text) {
-        log.info("默认实现 - 进行情感分析，文本长度: {}", text.length());
-        Map<String, Float> result = new HashMap<>();
-        result.put("积极", 0.5f);
-        result.put("消极", 0.3f);
-        result.put("中性", 0.2f);
-        return result;
+        try {
+            Map<String, Object> variables = Map.of("text", text);
+            String result = generateTextWithTemplate("请分析以下文本的情感倾向，返回JSON格式结果：{text}", variables);
+            
+            // 解析结果
+            Map<String, Float> sentiment = new HashMap<>();
+            String[] parts = result.split(",");
+            for (String part : parts) {
+                String[] keyValue = part.split(":");
+                if (keyValue.length == 2) {
+                    sentiment.put(keyValue[0].trim(), Float.parseFloat(keyValue[1].trim()));
+                }
+            }
+            return sentiment;
+        } catch (Exception e) {
+            log.error("文本情感分析失败", e);
+            throw new RuntimeException("文本情感分析失败", e);
+        }
     }
 } 

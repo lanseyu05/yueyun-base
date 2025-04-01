@@ -2,6 +2,7 @@ package online.yueyun.mybatisplus.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
 import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
@@ -9,16 +10,12 @@ import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerIntercept
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import online.yueyun.mybatisplus.handler.MybatisPlusFillHandler;
-import online.yueyun.mybatisplus.plugins.BlockAttackInterceptor;
-import online.yueyun.mybatisplus.tenant.TenantHandler;
-import online.yueyun.mybatisplus.tenant.TenantLineHandler;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import online.yueyun.mybatisplus.tenant.CustomTenantLineHandler;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 
 /**
  * MybatisPlus自动配置类
@@ -83,13 +80,10 @@ public class MybatisPlusAutoConfiguration {
 
         // 添加多租户插件
         if (properties.getTenant().isEnabled()) {
-            TenantLineHandler tenantLineHandler = this.tenantLineHandler();
-            if (tenantLineHandler != null) {
-                TenantLineInnerInterceptor tenantLineInnerInterceptor = new TenantLineInnerInterceptor();
-                tenantLineInnerInterceptor.setTenantLineHandler(tenantLineHandler);
-                interceptor.addInnerInterceptor(tenantLineInnerInterceptor);
-                log.info("多租户插件已启用");
-            }
+            TenantLineHandler tenantLineHandler = new CustomTenantLineHandler();
+            TenantLineInnerInterceptor tenantLineInnerInterceptor = new TenantLineInnerInterceptor(tenantLineHandler);
+            interceptor.addInnerInterceptor(tenantLineInnerInterceptor);
+            log.info("多租户插件已启用");
         }
 
         return interceptor;
@@ -102,19 +96,6 @@ public class MybatisPlusAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "yueyun.mybatis-plus.field-fill", name = "enabled", havingValue = "true", matchIfMissing = true)
     public MybatisPlusFillHandler mybatisPlusFillHandler() {
-        log.info("初始化MybatisPlusFillHandler");
         return new MybatisPlusFillHandler(properties);
-    }
-
-    /**
-     * 配置多租户处理器
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnBean(TenantHandler.class)
-    @ConditionalOnProperty(prefix = "yueyun.mybatis-plus.tenant", name = "enabled", havingValue = "true")
-    public TenantLineHandler tenantLineHandler() {
-        log.info("初始化TenantLineHandler");
-        return new TenantLineHandler(properties.getTenant());
     }
 } 

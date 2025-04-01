@@ -9,7 +9,6 @@ import online.yueyun.storage.exception.StorageException;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -23,14 +22,18 @@ import java.util.concurrent.TimeUnit;
 public class MinioStorageServiceImpl extends AbstractStorageServiceImpl {
 
     private final MinioClient minioClient;
-    private final StorageProperties.MinioConfig minioConfig;
+    private final StorageProperties.Minio minioConfig;
 
     public MinioStorageServiceImpl(StorageProperties storageProperties) {
+        if (storageProperties == null || storageProperties.getMinio() == null) {
+            throw new IllegalArgumentException("MinIO配置不能为空");
+        }
         this.minioConfig = storageProperties.getMinio();
         this.minioClient = MinioClient.builder()
                 .endpoint(minioConfig.getEndpoint())
                 .credentials(minioConfig.getAccessKey(), minioConfig.getSecretKey())
                 .build();
+        log.info("初始化MinIO存储服务，端点: {}", minioConfig.getEndpoint());
     }
 
     @Override
@@ -42,6 +45,7 @@ public class MinioStorageServiceImpl extends AbstractStorageServiceImpl {
                     .object(objectName)
                     .contentType(metadata.getOrDefault("contentType", "application/octet-stream"))
                     .stream(inputStream, -1, 10485760) // 10MB分块
+                    .headers(metadata)
                     .build();
 
             // 上传文件
@@ -73,13 +77,17 @@ public class MinioStorageServiceImpl extends AbstractStorageServiceImpl {
     @Override
     public String getFileUrl(String bucketName, String objectName, int expiry) {
         try {
-            return minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectName)
-                            .method(Method.GET)
-                            .expiry(expiry, TimeUnit.SECONDS)
-                            .build());
+            if (expiry > 0) {
+                return minioClient.getPresignedObjectUrl(
+                        GetPresignedObjectUrlArgs.builder()
+                                .bucket(bucketName)
+                                .object(objectName)
+                                .method(Method.GET)
+                                .expiry(expiry, TimeUnit.SECONDS)
+                                .build());
+            } else {
+                return String.format("%s/%s/%s", minioConfig.getEndpoint(), bucketName, objectName);
+            }
         } catch (Exception e) {
             log.error("MinIO获取文件URL失败", e);
             throw new StorageException("MinIO获取文件URL失败: " + e.getMessage(), e);

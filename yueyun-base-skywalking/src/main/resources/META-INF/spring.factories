@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  online.yueyun.skywalking.config.TracingAutoConfiguration 
+online.yueyun.skywalking.config.SkywalkingAutoConfiguration 

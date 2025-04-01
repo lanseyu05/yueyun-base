@@ -1,17 +1,17 @@
-# Excel操作模块 (yueyun-base-excel)
+# YueYun Excel 模块
 
-Excel操作模块是YueYun基础框架的一部分，提供了统一的Excel导入导出功能，基于Alibaba的EasyExcel实现，简化Excel操作，支持大数据量导入导出，防止OOM。
+基于 EasyExcel 的 Excel 导入导出工具模块，提供简单易用的 Excel 操作接口。
 
-## 特性
+## 功能特性
 
-- 简化Excel导入导出操作
-- 支持通过注解配置Excel列属性
-- 支持大数据量分批处理，防止OOM
-- 支持同步和异步导入
-- 支持自定义读取监听器
-- 支持多Sheet导出
-- 自动配置和条件装配
-- 通过注解方式快速启用
+- 支持 Excel 导入导出
+- 支持自定义模板
+- 支持大数据量处理
+- 支持自定义监听器
+- 支持异步处理
+- 支持自定义样式
+- 支持多 Sheet 操作
+- 支持自定义字段映射
 
 ## 快速开始
 
@@ -21,209 +21,358 @@ Excel操作模块是YueYun基础框架的一部分，提供了统一的Excel导�
 <dependency>
     <groupId>online.yueyun</groupId>
     <artifactId>yueyun-base-excel</artifactId>
-    <version>1.0.0</version>
+    <version>${project.version}</version>
 </dependency>
 ```
 
-### 2. 启用Excel功能
+### 2. 启用 Excel 功能
 
-在应用的启动类上添加`@EnableExcel`注解：
+在启动类上添加 `@EnableExcel` 注解：
 
 ```java
 @SpringBootApplication
 @EnableExcel
-public class YourApplication {
+public class Application {
     public static void main(String[] args) {
-        SpringApplication.run(YourApplication.class, args);
+        SpringApplication.run(Application.class, args);
     }
 }
 ```
 
-### 3. 配置Excel属性（可选）
+### 3. 配置 Excel 属性
 
-在`application.yml`或`application.properties`中配置Excel属性：
+在 `application.yml` 中添加配置：
 
 ```yaml
 yueyun:
   excel:
-    enabled: true
-    upload-temp-dir: /tmp/excel
-    max-upload-size: 10485760 # 10MB
-    ignore-empty-row: true
-    write:
-      default-date-format: yyyy-MM-dd
-      auto-close-stream: true
-      use-default-style: true
-      max-sheet-rows: 1000000
+    default-sheet-name: Sheet1
+    import:
+      cache-size: 1000
+      ignore-empty-row: true
     read:
-      default-date-format: yyyy-MM-dd
       auto-close-stream: true
-      head-row-number: 1
-      batch-size: 100
+    write:
+      auto-close-stream: true
 ```
 
-### 4. 定义数据模型
-
-使用`@ExcelProperty`注解标记需要导入导出的字段：
+### 4. 创建 Excel 实体类
 
 ```java
 @Data
-public class UserDto {
-    
-    @ExcelProperty(name = "用户ID", order = 1)
+@ExcelSheet(name = "用户信息")
+public class UserExcel {
+    @ExcelField(name = "用户ID", order = 1)
     private Long id;
     
-    @ExcelProperty(name = "用户名", order = 2)
+    @ExcelField(name = "用户名", order = 2)
     private String username;
     
-    @ExcelProperty(name = "邮箱", order = 3)
-    private String email;
+    @ExcelField(name = "年龄", order = 3, numberFormat = "0")
+    private Integer age;
     
-    @ExcelProperty(name = "创建时间", order = 4, dateFormat = "yyyy-MM-dd HH:mm:ss")
-    private Date createTime;
+    @ExcelField(name = "生日", order = 4, dateFormat = "yyyy-MM-dd")
+    private Date birthday;
     
-    @ExcelProperty(ignore = true)
-    private String password;
+    @ExcelField(name = "状态", order = 5)
+    private String status;
 }
 ```
 
-### 5. 导出Excel
+### 5. 使用 Excel 服务
 
 ```java
 @RestController
-@RequestMapping("/users")
-public class UserController {
+@RequestMapping("/api/excel")
+public class ExcelController {
     
     @Autowired
-    private ExcelService excelService;
+    private EasyExcelService excelService;
     
-    @Autowired
-    private UserService userService;
-    
+    /**
+     * 导出 Excel
+     */
     @GetMapping("/export")
-    public void export(HttpServletResponse response) throws Exception {
-        // 设置响应头
-        response.setContentType("application/vnd.ms-excel");
-        response.setCharacterEncoding("utf-8");
-        response.setHeader("Content-disposition", "attachment;filename=users.xlsx");
-        
-        // 获取数据
-        List<UserDto> users = userService.listAll();
-        
-        // 导出
-        excelService.export(users, UserDto.class, response.getOutputStream());
+    public void export(HttpServletResponse response) throws IOException {
+        List<UserExcel> dataList = getUserList();
+        excelService.exportToResponse(dataList, UserExcel.class, "用户列表.xlsx", response);
     }
-}
-```
-
-### 6. 导入Excel
-
-```java
-@RestController
-@RequestMapping("/users")
-public class UserController {
     
-    @Autowired
-    private ExcelService excelService;
-    
-    @Autowired
-    private UserService userService;
-    
+    /**
+     * 导入 Excel
+     */
     @PostMapping("/import")
-    public String importUsers(MultipartFile file) throws Exception {
-        try (InputStream inputStream = file.getInputStream()) {
-            List<UserDto> users = excelService.importExcel(inputStream, UserDto.class);
-            userService.batchSave(users);
-            return "导入成功，共导入" + users.size() + "条数据";
-        }
+    public ExcelImportResult<UserExcel> importExcel(@RequestParam("file") MultipartFile file) {
+        return excelService.importExcelWithResult(file, UserExcel.class);
     }
-}
-```
-
-### 7. 使用异步读取处理大数据量
-
-```java
-@Service
-public class UserImportService {
     
-    @Autowired
-    private ExcelService excelService;
-    
-    @Autowired
-    private UserRepository userRepository;
-    
-    public void importUsers(InputStream inputStream) {
+    /**
+     * 使用监听器导入 Excel
+     */
+    @PostMapping("/import-with-listener")
+    public void importWithListener(@RequestParam("file") MultipartFile file) {
         excelService.importExcelWithListener(
-            inputStream, 
-            UserDto.class,
-            new ReadListener<UserDto>() {
+            file.getInputStream(),
+            UserExcel.class,
+            new ReadListener<UserExcel>() {
                 @Override
-                public void invoke(List<UserDto> dataList) {
-                    // 批量处理数据
-                    userRepository.batchSave(dataList);
+                public void invoke(List<UserExcel> dataList) {
+                    // 处理数据
+                    processData(dataList);
                 }
                 
                 @Override
                 public void doAfterAll() {
-                    // 处理完成后的逻辑
-                    log.info("用户导入完成");
+                    // 完成后的操作
+                    log.info("导入完成");
+                }
+                
+                @Override
+                public void onException(Exception e, ReadContext context) {
+                    // 异常处理
+                    log.error("导入异常，行号：{}", context.getRowIndex(), e);
                 }
             }
+        );
+    }
+    
+    /**
+     * 使用模板导出 Excel
+     */
+    @GetMapping("/export-with-template")
+    public void exportWithTemplate(HttpServletResponse response) throws IOException {
+        List<UserExcel> dataList = getUserList();
+        excelService.exportExcelWithTemplate(
+            dataList,
+            "templates/user.xlsx",
+            "用户列表.xlsx",
+            response
+        );
+    }
+    
+    /**
+     * 填充 Excel 模板
+     */
+    @GetMapping("/fill-template")
+    public void fillTemplate(HttpServletResponse response) throws IOException {
+        Map<String, Object> params = new HashMap<>();
+        params.put("title", "用户统计");
+        params.put("total", 100);
+        params.put("date", new Date());
+        
+        excelService.fillTemplate(
+            "templates/statistics.xlsx",
+            "统计报表.xlsx",
+            params,
+            response
         );
     }
 }
 ```
 
-## 模块架构
+## 注解说明
 
-```
-yueyun-base-excel
-├── annotation              - 注解
-│   ├── EnableExcel         - 启用Excel功能注解
-│   └── ExcelProperty       - Excel属性注解
-├── config                  - 配置
-│   ├── ExcelProperties     - 配置属性类
-│   └── ExcelAutoConfiguration - 自动配置类
-├── listener                - 监听器
-│   └── ReadListener        - 读取监听器接口
-├── service                 - 服务
-│   ├── ExcelService        - Excel服务接口
-│   └── impl                - 实现类
-│       └── ExcelServiceImpl - Excel服务实现
-└── util                    - 工具类
-    └── ExcelUtils          - Excel工具类
-```
+### @EnableExcel
 
-## 高级用法
+启用 Excel 功能，需要在启动类上添加此注解。
 
-### 1. 指定Sheet名称
+### @ExcelSheet
+
+用于指定 Excel 工作表名称。
 
 ```java
-excelService.export(data, UserDto.class, outputStream, "用户数据");
+@ExcelSheet(name = "用户信息")
+public class UserExcel {
+    // ...
+}
 ```
 
-### 2. 导入指定Sheet
+### @ExcelField
+
+用于配置 Excel 字段属性。
 
 ```java
-// 导入第一个Sheet
-List<UserDto> users = excelService.importExcel(inputStream, UserDto.class, 0);
-
-// 导入指定名称的Sheet
-List<UserDto> users = excelService.importExcel(inputStream, UserDto.class, "用户数据");
+@ExcelField(
+    name = "用户名",           // 字段名称
+    order = 1,               // 排序
+    dateFormat = "yyyy-MM-dd", // 日期格式
+    numberFormat = "0.00",    // 数字格式
+    width = 20,              // 列宽
+    ignore = false           // 是否忽略
+)
+private String username;
 ```
 
-### 3. 自定义列宽和样式
+## 配置说明
 
-通过`@ExcelProperty`注解的`width`属性设置列宽：
+### 基础配置
+
+```yaml
+yueyun:
+  excel:
+    default-sheet-name: Sheet1  # 默认工作表名称
+```
+
+### 导入配置
+
+```yaml
+yueyun:
+  excel:
+    import:
+      cache-size: 1000        # 缓存大小
+      ignore-empty-row: true  # 是否忽略空行
+```
+
+### 读取配置
+
+```yaml
+yueyun:
+  excel:
+    read:
+      auto-close-stream: true  # 是否自动关闭流
+```
+
+### 写入配置
+
+```yaml
+yueyun:
+  excel:
+    write:
+      auto-close-stream: true  # 是否自动关闭流
+```
+
+## 最佳实践
+
+### 1. 大数据量处理
+
+对于大数据量的 Excel 导入导出，建议使用监听器方式：
 
 ```java
-@ExcelProperty(name = "备注", order = 5, width = 50)
-private String remark;
+excelService.importExcelWithListener(
+    file.getInputStream(),
+    UserExcel.class,
+    new ReadListener<UserExcel>() {
+        @Override
+        public void invoke(List<UserExcel> dataList) {
+            // 分批处理数据
+            processBatch(dataList);
+        }
+    }
+);
+```
+
+### 2. 自定义样式
+
+可以通过 EasyExcel 的样式处理器来自定义 Excel 样式：
+
+```java
+EasyExcel.write(fileName, UserExcel.class)
+    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+    .registerWriteHandler(new CustomStyleHandler())
+    .sheet("用户列表")
+    .doWrite(dataList);
+```
+
+### 3. 错误处理
+
+建议在监听器中实现错误处理：
+
+```java
+@Override
+public void onException(Exception e, ReadContext context) {
+    log.error("导入异常，行号：{}，Sheet：{}", 
+        context.getRowIndex(), 
+        context.getSheetName(), 
+        e
+    );
+    // 记录错误信息
+    errorList.add(String.format("第%d行数据异常：%s", 
+        context.getRowIndex(), 
+        e.getMessage()
+    ));
+}
+```
+
+### 4. 模板使用
+
+对于复杂的 Excel 导出，建议使用模板：
+
+```java
+// 1. 准备模板文件
+// 2. 准备数据
+Map<String, Object> params = new HashMap<>();
+params.put("title", "用户统计");
+params.put("dataList", userList);
+// 3. 填充模板
+excelService.fillTemplate("templates/report.xlsx", "统计报表.xlsx", params);
 ```
 
 ## 注意事项
 
-1. 大数据量导入导出时，建议使用异步方式或分批处理，避免OOM
-2. 导入导出字段需要使用`@ExcelProperty`注解标记
-3. 日期格式化需要在`@ExcelProperty`注解中配置`dateFormat`属性
-4. 敏感字段可以通过`ignore = true`属性忽略导出 
+1. 大数据量导入时，建议使用监听器方式，避免内存溢出
+2. 导出时注意及时关闭流，避免资源泄露
+3. 使用模板时，确保模板文件存在且格式正确
+4. 注意处理文件名编码，避免中文乱码
+5. 建议在监听器中实现错误处理，记录异常信息
+6. 对于敏感数据，注意在导出时进行脱敏处理
+
+## 常见问题
+
+### 1. 中文乱码
+
+导出时设置正确的响应头：
+
+```java
+response.setContentType("application/vnd.ms-excel");
+response.setCharacterEncoding("utf-8");
+String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+    .replaceAll("\\+", "%20");
+response.setHeader("Content-disposition", 
+    "attachment;filename*=utf-8''" + encodedFileName);
+```
+
+### 2. 内存溢出
+
+使用监听器分批处理数据：
+
+```java
+@ExcelField
+public void invoke(List<UserExcel> dataList) {
+    // 处理一批数据
+    processBatch(dataList);
+    // 清理内存
+    dataList.clear();
+}
+```
+
+### 3. 日期格式
+
+使用 `@ExcelField` 注解指定日期格式：
+
+```java
+@ExcelField(dateFormat = "yyyy-MM-dd HH:mm:ss")
+private Date createTime;
+```
+
+### 4. 数字格式
+
+使用 `@ExcelField` 注解指定数字格式：
+
+```java
+@ExcelField(numberFormat = "0.00")
+private BigDecimal amount;
+```
+
+## 更新日志
+
+### 1.0.0
+
+- 初始版本发布
+- 支持基本的 Excel 导入导出功能
+- 支持自定义模板
+- 支持大数据量处理
+- 支持自定义监听器
+- 支持异步处理
+- 支持自定义样式
+- 支持多 Sheet 操作
+- 支持自定义字段映射 

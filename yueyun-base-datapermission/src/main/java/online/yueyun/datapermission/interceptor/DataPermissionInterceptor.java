@@ -38,10 +38,6 @@ public class DataPermissionInterceptor extends JsqlParserSupport implements Inne
      */
     @Override
     public void beforeQuery(Executor executor, MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
-        // 检查是否忽略数据权限
-        if (dataPermissionHandler.ignorePermission()) {
-            return;
-        }
 
         // 获取当前执行的方法上的数据权限注解
         DataPermission dataPermission = getDataPermission(ms);

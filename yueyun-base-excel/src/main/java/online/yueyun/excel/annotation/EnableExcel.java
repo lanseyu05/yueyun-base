@@ -1,6 +1,6 @@
 package online.yueyun.excel.annotation;
 
-import online.yueyun.excel.config.ExcelAutoConfiguration;
+import online.yueyun.excel.config.ExcelConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
@@ -15,6 +15,6 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(ExcelAutoConfiguration.class)
+@Import(ExcelConfiguration.class)
 public @interface EnableExcel {
 } 

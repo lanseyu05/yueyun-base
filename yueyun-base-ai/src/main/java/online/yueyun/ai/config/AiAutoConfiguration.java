@@ -1,7 +1,8 @@
 package online.yueyun.ai.config;
 
+import lombok.extern.slf4j.Slf4j;
 import online.yueyun.ai.service.AiService;
-import online.yueyun.ai.service.impl.DefaultAiServiceImpl;
+import online.yueyun.ai.service.impl.AiServiceImpl;
 import online.yueyun.ai.template.AiTemplateManager;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,16 +12,32 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
- * AI模块自动配置类
- * 支持自定义实现扩展
- * 
- * @author yueyun
+ * AI功能自动配置类
+ *
+ * @author YueYun
+ * @since 1.0.0
  */
+@Slf4j
 @Configuration
 @EnableConfigurationProperties(AiProperties.class)
 @Import({AiTemplateManager.class})
+@ConditionalOnProperty(prefix = "yueyun.ai", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class AiAutoConfiguration {
 
+    /**
+     * 配置AI服务
+     *
+     * @param properties 配置属性
+     * @param templateManager 模板管理器
+     * @return AI服务
+     */
+    @Bean(name = "aiService")
+    @ConditionalOnMissingBean(name = "aiService")
+    public AiService aiService(AiProperties properties, AiTemplateManager templateManager) {
+        log.info("初始化AI服务");
+        return new AiServiceImpl(properties, templateManager);
+    }
+    
     /**
      * 注册AI属性配置
      */
@@ -28,17 +45,6 @@ public class AiAutoConfiguration {
     @ConditionalOnMissingBean
     public AiProperties aiProperties() {
         return new AiProperties();
-    }
-    
-    /**
-     * 注册默认AI服务实现
-     * 当没有自定义实现时生效
-     */
-    @Bean
-    @ConditionalOnMissingBean(AiService.class)
-    @ConditionalOnProperty(prefix = "yueyun.ai", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public AiService defaultAiService() {
-        return new DefaultAiServiceImpl();
     }
     
     /**

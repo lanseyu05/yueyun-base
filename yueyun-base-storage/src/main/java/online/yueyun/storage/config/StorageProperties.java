@@ -1,97 +1,125 @@
 package online.yueyun.storage.config;
 
 import lombok.Data;
-import online.yueyun.storage.enums.StorageTypeEnum;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 存储配置属性
- * 
- * @author yueyun
+ * 存储服务配置属性
  */
 @Data
 @ConfigurationProperties(prefix = "yueyun.storage")
 public class StorageProperties {
+    /**
+     * 存储类型：local, minio, oss, cos
+     */
+    private String type = "local";
 
     /**
-     * 存储类型，默认为MinIO
+     * 本地存储配置
      */
-    private String type = StorageTypeEnum.MINIO.getCode();
-    
+    private Local local = new Local();
+
     /**
-     * MinIO配置
+     * MinIO存储配置
      */
-    private final MinioConfig minio = new MinioConfig();
-    
+    private Minio minio = new Minio();
+
     /**
      * 阿里云OSS配置
      */
-    private final AliyunOssConfig aliyunOss = new AliyunOssConfig();
-    
+    private Oss oss = new Oss();
+
     /**
-     * MinIO配置
+     * 腾讯云COS配置
+     */
+    private Cos cos = new Cos();
+
+    /**
+     * 本地存储配置
      */
     @Data
-    public static class MinioConfig {
+    public static class Local {
+        /**
+         * 存储路径
+         */
+        private String path = "upload";
+    }
+
+    /**
+     * MinIO存储配置
+     */
+    @Data
+    public static class Minio {
         /**
          * 服务地址
          */
         private String endpoint;
-        
+
         /**
          * 访问密钥
          */
         private String accessKey;
-        
+
         /**
-         * 访问密钥密文
+         * 访问密钥
          */
         private String secretKey;
-        
+
         /**
-         * 默认存储桶
+         * 存储桶名称
          */
-        private String defaultBucketName = "default";
-        
-        /**
-         * 连接超时（秒）
-         */
-        private Integer connectTimeout = 10;
-        
-        /**
-         * 是否使用SSL
-         */
-        private boolean secure = false;
+        private String bucketName;
     }
-    
+
     /**
      * 阿里云OSS配置
      */
     @Data
-    public static class AliyunOssConfig {
+    public static class Oss {
         /**
          * 服务地址
          */
         private String endpoint;
-        
+
         /**
          * 访问密钥
          */
-        private String accessKeyId;
-        
+        private String accessKey;
+
         /**
-         * 访问密钥密文
+         * 访问密钥
          */
-        private String accessKeySecret;
-        
+        private String secretKey;
+
         /**
-         * 默认存储桶
+         * 存储桶名称
          */
-        private String defaultBucketName = "default";
-        
+        private String bucketName;
+    }
+
+    /**
+     * 腾讯云COS配置
+     */
+    @Data
+    public static class Cos {
         /**
-         * 连接超时（秒）
+         * 服务地址
          */
-        private Integer connectTimeout = 10;
+        private String endpoint;
+
+        /**
+         * 访问密钥
+         */
+        private String accessKey;
+
+        /**
+         * 访问密钥
+         */
+        private String secretKey;
+
+        /**
+         * 存储桶名称
+         */
+        private String bucketName;
     }
 } 

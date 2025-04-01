@@ -156,8 +156,8 @@ public class StorageController {
         // 根据当前存储类型获取默认桶名
         String type = storageProperties.getType();
         return switch (type) {
-            case "minio" -> storageProperties.getMinio().getDefaultBucketName();
-            case "aliyun-oss" -> storageProperties.getAliyunOss().getDefaultBucketName();
+            case "minio" -> storageProperties.getMinio().getBucketName();
+            case "aliyun-oss" -> storageProperties.getOss().getBucketName();
             default -> "default";
         };
     }

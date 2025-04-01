@@ -1,184 +1,194 @@
-# 悦芸文件存储模块
+# yueyun-base-storage 模块
 
-> 提供统一的文件存储服务，支持MinIO、阿里云OSS等多种存储方式，易于扩展。
+## 1. 最小化接入方案
 
-## 功能特性
-
-- 支持多种存储方式，可通过配置切换
-  - MinIO对象存储
-  - 阿里云OSS对象存储
-  - 可扩展其他存储方式
-- 统一的文件上传、删除、访问API
-- 自动创建存储桶
-- 支持文件元数据管理
-- 提供Ant Design Pro上传组件
-
-## 快速开始
-
-### 引入依赖
-
+### 1.1 添加依赖
 ```xml
 <dependency>
     <groupId>online.yueyun</groupId>
     <artifactId>yueyun-base-storage</artifactId>
-    <version>1.0.0</version>
+    <version>${project.version}</version>
 </dependency>
 ```
 
-### 配置文件
-
+### 1.2 基础配置
 ```yaml
 yueyun:
   storage:
-    # 存储类型：minio, aliyun-oss
-    type: minio
-    
+    # 存储类型：local, minio, oss, cos
+    type: local
+    # 本地存储配置
+    local:
+      path: /data/storage
     # MinIO配置
     minio:
       endpoint: http://localhost:9000
-      access-key: minioadmin
-      secret-key: minioadmin
-      default-bucket-name: yueyun
-      connect-timeout: 10
-      secure: false
-      
+      access-key: your-access-key
+      secret-key: your-secret-key
+      bucket-name: your-bucket
     # 阿里云OSS配置
-    aliyun-oss:
-      endpoint: https://oss-cn-hangzhou.aliyuncs.com
-      access-key-id: your-access-key-id
-      access-key-secret: your-access-key-secret
-      default-bucket-name: yueyun
-      connect-timeout: 10
+    oss:
+      endpoint: oss-cn-hangzhou.aliyuncs.com
+      access-key: your-access-key
+      secret-key: your-secret-key
+      bucket-name: your-bucket
+    # 腾讯云COS配置
+    cos:
+      region: ap-guangzhou
+      access-key: your-access-key
+      secret-key: your-secret-key
+      bucket-name: your-bucket
 ```
 
-### 示例代码
-
+### 1.3 启用存储服务
 ```java
-@RestController
-@RequestMapping("/demo")
-@RequiredArgsConstructor
-public class DemoController {
+@Configuration
+@EnableStorageService
+public class StorageConfig {
+    @Bean
+    public StorageService storageService() {
+        return new StorageServiceImpl();
+    }
+}
+```
 
-    private final StorageService storageService;
+## 2. 详细进阶配置
+
+### 2.1 文件上传
+```java
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
     
-    @PostMapping("/upload")
-    public String upload(@RequestParam("file") MultipartFile file) {
-        // 上传到默认存储桶
-        return storageService.uploadFile(file, "yueyun");
+    public String uploadFile(MultipartFile file, String path) {
+        return storageService.uploadFile(file, path);
     }
     
-    @GetMapping("/url")
-    public String getUrl(@RequestParam String objectName) {
-        // 获取文件访问URL，有效期1小时
-        return storageService.getFileUrl("yueyun", objectName, 3600);
+    public String uploadFile(InputStream inputStream, String originalFilename, String path) {
+        return storageService.uploadFile(inputStream, originalFilename, path);
+    }
+}
+```
+
+### 2.2 文件下载
+```java
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public void downloadFile(String path, OutputStream outputStream) {
+        storageService.downloadFile(path, outputStream);
     }
     
-    @DeleteMapping("/delete")
-    public boolean delete(@RequestParam String objectName) {
-        // 删除文件
-        return storageService.deleteFile("yueyun", objectName);
+    public byte[] downloadFileAsBytes(String path) {
+        return storageService.downloadFileAsBytes(path);
     }
 }
 ```
 
-## 前端集成
-
-### 安装依赖
-
-```bash
-npm install --save antd @ant-design/icons
-```
-
-### 引入组件
-
-```tsx
-import React, { useState } from 'react';
-import { message } from 'antd';
-import FileUpload from '@/components/FileUpload';
-import type { UploadFile } from 'antd/es/upload/interface';
-
-const MyComponent: React.FC = () => {
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
-
-  const handleChange = (files: UploadFile[]) => {
-    setFileList(files);
-  };
-
-  const handleSuccess = (response: any) => {
-    message.success('上传成功：' + response.fileName);
-    console.log('文件URL:', response.fileUrl);
-  };
-
-  return (
-    <FileUpload 
-      action="/storage/upload"
-      bucketName="yueyun"
-      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-      maxSize={10}
-      fileList={fileList}
-      onChange={handleChange}
-      onSuccess={handleSuccess}
-    />
-  );
-};
-
-export default MyComponent;
-```
-
-## 扩展新的存储实现
-
-1. 创建新的存储服务实现类，继承`AbstractStorageServiceImpl`：
-
+### 2.3 文件删除
 ```java
-@Slf4j
-@Service("customStorageService")
-public class CustomStorageServiceImpl extends AbstractStorageServiceImpl {
-
-    @Override
-    protected String doUploadFile(InputStream inputStream, String objectName, String bucketName, Map<String, String> metadata) {
-        // 实现自定义存储逻辑
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public void deleteFile(String path) {
+        storageService.deleteFile(path);
     }
-
-    @Override
-    public boolean deleteFile(String bucketName, String objectName) {
-        // 实现删除逻辑
-    }
-
-    @Override
-    public String getFileUrl(String bucketName, String objectName, int expiry) {
-        // 实现获取URL逻辑
-    }
-
-    @Override
-    public void ensureBucketExists(String bucketName) {
-        // 实现创建存储桶逻辑
+    
+    public void deleteFiles(List<String> paths) {
+        storageService.deleteFiles(paths);
     }
 }
 ```
 
-2. 将新存储类型添加到枚举类：
-
+### 2.4 文件访问URL
 ```java
-public enum StorageTypeEnum {
-    MINIO("minio", "MinIO对象存储"),
-    ALIYUN_OSS("aliyun-oss", "阿里云OSS对象存储"),
-    CUSTOM("custom", "自定义存储");
-    // ...
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public String getFileUrl(String path) {
+        return storageService.getFileUrl(path);
+    }
+    
+    public String getFileUrl(String path, int expiry) {
+        return storageService.getFileUrl(path, expiry);
+    }
 }
 ```
 
-3. 更新配置类中的存储类型选择逻辑：
-
+### 2.5 文件元数据
 ```java
-@Bean
-@Primary
-public StorageService storageService() {
-    StorageTypeEnum storageType = StorageTypeEnum.getByCode(storageProperties.getType());
-    return switch (storageType) {
-        case MINIO -> applicationContext.getBean("minioStorageService", StorageService.class);
-        case ALIYUN_OSS -> applicationContext.getBean("aliyunOssStorageService", StorageService.class);
-        case CUSTOM -> applicationContext.getBean("customStorageService", StorageService.class);
-        default -> applicationContext.getBean("minioStorageService", StorageService.class);
-    };
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public Map<String, String> getFileMetadata(String path) {
+        return storageService.getFileMetadata(path);
+    }
+    
+    public void setFileMetadata(String path, Map<String, String> metadata) {
+        storageService.setFileMetadata(path, metadata);
+    }
 }
-``` 
+```
+
+### 2.6 文件列表
+```java
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public List<FileInfo> listFiles(String path) {
+        return storageService.listFiles(path);
+    }
+    
+    public List<FileInfo> listFiles(String path, String prefix) {
+        return storageService.listFiles(path, prefix);
+    }
+}
+```
+
+### 2.7 文件复制
+```java
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public void copyFile(String sourcePath, String targetPath) {
+        storageService.copyFile(sourcePath, targetPath);
+    }
+    
+    public void moveFile(String sourcePath, String targetPath) {
+        storageService.moveFile(sourcePath, targetPath);
+    }
+}
+```
+
+### 2.8 文件校验
+```java
+@Service
+public class FileService {
+    @Autowired
+    private StorageService storageService;
+    
+    public boolean exists(String path) {
+        return storageService.exists(path);
+    }
+    
+    public long getFileSize(String path) {
+        return storageService.getFileSize(path);
+    }
+    
+    public String getFileMd5(String path) {
+        return storageService.getFileMd5(path);
+    }
+} 

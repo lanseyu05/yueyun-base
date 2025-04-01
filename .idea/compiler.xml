@@ -6,8 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="yueyun-base-skywalking" />
         <module name="yueyun-base-storage" />
+        <module name="yueyun-base-skywalking" />
         <module name="yueyun-base-ip" />
         <module name="yueyun-base-excel" />
         <module name="yueyun-base-mq" />

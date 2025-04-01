@@ -22,15 +22,19 @@ import java.util.Map;
 @Service("aliyunOssStorageService")
 public class AliyunOssStorageServiceImpl extends AbstractStorageServiceImpl {
 
-    private final StorageProperties.AliyunOssConfig ossConfig;
+    private final StorageProperties.Oss ossConfig;
     private final OSS ossClient;
 
     public AliyunOssStorageServiceImpl(StorageProperties storageProperties) {
-        this.ossConfig = storageProperties.getAliyunOss();
+        if (storageProperties == null || storageProperties.getOss() == null) {
+            throw new IllegalArgumentException("阿里云OSS配置不能为空");
+        }
+        this.ossConfig = storageProperties.getOss();
         this.ossClient = new OSSClientBuilder().build(
                 ossConfig.getEndpoint(),
-                ossConfig.getAccessKeyId(),
-                ossConfig.getAccessKeySecret());
+                ossConfig.getAccessKey(),
+                ossConfig.getSecretKey());
+        log.info("初始化阿里云OSS存储服务，端点: {}", ossConfig.getEndpoint());
     }
 
     @Override
@@ -72,13 +76,18 @@ public class AliyunOssStorageServiceImpl extends AbstractStorageServiceImpl {
     @Override
     public String getFileUrl(String bucketName, String objectName, int expiry) {
         try {
-            // 设置URL过期时间
-            Date expirationDate = new Date(System.currentTimeMillis() + expiry * 1000L);
-            
-            // 生成以GET方法访问的签名URL
-            URL url = ossClient.generatePresignedUrl(bucketName, objectName, expirationDate);
-            
-            return url.toString();
+            if (expiry > 0) {
+                // 设置URL过期时间
+                Date expirationDate = new Date(System.currentTimeMillis() + expiry * 1000L);
+                
+                // 生成以GET方法访问的签名URL
+                URL url = ossClient.generatePresignedUrl(bucketName, objectName, expirationDate);
+                
+                return url.toString();
+            } else {
+                // 返回永久访问URL
+                return String.format("https://%s.%s/%s", bucketName, ossConfig.getEndpoint(), objectName);
+            }
         } catch (Exception e) {
             log.error("阿里云OSS获取文件URL失败", e);
             throw new StorageException("阿里云OSS获取文件URL失败: " + e.getMessage(), e);
