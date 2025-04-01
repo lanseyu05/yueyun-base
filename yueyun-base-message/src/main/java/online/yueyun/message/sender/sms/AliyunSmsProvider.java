@@ -13,8 +13,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 阿里云短信服务提供商实现
@@ -27,6 +31,15 @@ public class AliyunSmsProvider implements SmsProvider {
     private final ObjectMapper objectMapper;
     private RestTemplate restTemplate;
     private boolean initialized = false;
+    
+    private static final String SMS_API_ENDPOINT = "https://dysmsapi.aliyuncs.com/";
+    private static final String SMS_API_VERSION = "2017-05-25";
+    private static final String SMS_ACTION = "SendSms";
+    private static final String SMS_REGION_ID = "cn-hangzhou";
+    private static final String ALGORITHM = "HmacSHA1";
+    private static final String FORMAT = "JSON";
+    private static final String SIGNATURE_METHOD = "HMAC-SHA1";
+    private static final String SIGNATURE_VERSION = "1.0";
 
     @Override
     public String getName() {
@@ -44,8 +57,19 @@ public class AliyunSmsProvider implements SmsProvider {
                     String.join(",", request.getReceivers()),
                     request.getTemplateId());
             
-            // 构建请求参数
-            Map<String, Object> params = new HashMap<>();
+            // 构建公共请求参数
+            Map<String, String> params = new TreeMap<>();
+            params.put("AccessKeyId", smsProperties.getAccessKey());
+            params.put("Action", SMS_ACTION);
+            params.put("Format", FORMAT);
+            params.put("RegionId", StringUtils.hasText(smsProperties.getRegion()) ? smsProperties.getRegion() : SMS_REGION_ID);
+            params.put("SignatureMethod", SIGNATURE_METHOD);
+            params.put("SignatureVersion", SIGNATURE_VERSION);
+            params.put("SignatureNonce", UUID.randomUUID().toString());
+            params.put("Timestamp", getISO8601Time());
+            params.put("Version", SMS_API_VERSION);
+            
+            // 构建业务请求参数
             params.put("PhoneNumbers", String.join(",", request.getReceivers()));
             params.put("SignName", smsProperties.getSignName());
             params.put("TemplateCode", request.getTemplateId() != null ? 
@@ -56,24 +80,18 @@ public class AliyunSmsProvider implements SmsProvider {
                 params.put("TemplateParam", objectMapper.writeValueAsString(request.getParams()));
             }
             
-            // 添加认证信息和其他必要参数
-            params.put("AccessKeyId", smsProperties.getAccessKey());
-            // 省略签名计算过程，实际需要按照阿里云的规则计算签名
+            // 计算签名
+            String signature = calculateSignature(params, smsProperties.getSecretKey());
+            
+            // 构建完整请求URL
+            String requestUrl = buildRequestUrl(params, signature);
             
             // 发送HTTP请求
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(params, headers);
+            ResponseEntity<String> responseEntity = restTemplate.getForEntity(requestUrl, String.class);
+            String responseBody = responseEntity.getBody();
             
-            // 模拟请求发送
-            // 实际应使用阿里云SDK或根据阿里云API文档构建正确的请求
-            log.info("模拟发送阿里云短信请求: {}", params);
-            
-            // 模拟成功响应
-            Map<String, Object> response = new HashMap<>();
-            response.put("Code", "OK");
-            response.put("Message", "success");
-            response.put("BizId", java.util.UUID.randomUUID().toString());
+            // 解析响应
+            Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
             
             // 处理响应
             if ("OK".equals(response.get("Code"))) {
@@ -94,12 +112,87 @@ public class AliyunSmsProvider implements SmsProvider {
         }
     }
     
+    /**
+     * 计算阿里云API签名
+     * 
+     * @param params 请求参数
+     * @param secretKey 密钥
+     * @return 签名字符串
+     */
+    private String calculateSignature(Map<String, String> params, String secretKey) throws Exception {
+        // 1. 构建规范化请求字符串
+        StringBuilder canonicalizedQueryString = new StringBuilder();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            canonicalizedQueryString.append("&")
+                .append(percentEncode(entry.getKey()))
+                .append("=")
+                .append(percentEncode(entry.getValue()));
+        }
+        
+        // 2. 构建待签名字符串
+        StringBuilder stringToSign = new StringBuilder();
+        stringToSign.append("GET&")
+            .append(percentEncode("/"))
+            .append("&")
+            .append(percentEncode(canonicalizedQueryString.toString().substring(1)));
+        
+        // 3. 计算HMAC-SHA1签名
+        Mac mac = Mac.getInstance(ALGORITHM);
+        mac.init(new SecretKeySpec((secretKey + "&").getBytes(StandardCharsets.UTF_8), ALGORITHM));
+        byte[] signData = mac.doFinal(stringToSign.toString().getBytes(StandardCharsets.UTF_8));
+        
+        // 4. Base64编码
+        return Base64.getEncoder().encodeToString(signData);
+    }
+    
+    /**
+     * 构建完整的请求URL
+     * 
+     * @param params 请求参数
+     * @param signature 签名
+     * @return 完整请求URL
+     */
+    private String buildRequestUrl(Map<String, String> params, String signature) throws Exception {
+        StringBuilder requestUrl = new StringBuilder(SMS_API_ENDPOINT + "?Signature=");
+        requestUrl.append(percentEncode(signature));
+        
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            requestUrl.append("&")
+                .append(percentEncode(entry.getKey()))
+                .append("=")
+                .append(percentEncode(entry.getValue()));
+        }
+        
+        return requestUrl.toString();
+    }
+    
+    /**
+     * 获取ISO8601格式的时间戳
+     */
+    private String getISO8601Time() {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return df.format(new Date());
+    }
+    
+    /**
+     * 按照RFC3986规则进行URL编码
+     */
+    private String percentEncode(String value) throws Exception {
+        return value != null ? 
+            URLEncoder.encode(value, StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("*", "%2A")
+                .replace("%7E", "~") 
+            : "";
+    }
+    
     @Override
     public boolean initialize() {
         try {
             log.info("初始化阿里云短信客户端");
             
-            if (StringUtils.hasText(smsProperties.getAccessKey()) ||
+            if (StringUtils.hasText(smsProperties.getAccessKey()) || 
                 StringUtils.hasText(smsProperties.getSecretKey())) {
                 log.error("阿里云短信配置缺失: AccessKey或SecretKey未设置");
                 return false;

@@ -23,6 +23,11 @@ public class MessageRecord {
     private Long id;
 
     /**
+     * 消息幂等ID
+     */
+    private String messageId;
+
+    /**
      * 消息渠道
      */
     private MessageChannelEnum channel;
@@ -68,6 +73,11 @@ public class MessageRecord {
     private String attachments;
 
     /**
+     * 模板参数（JSON对象）
+     */
+    private String params;
+
+    /**
      * 重试次数
      */
     private Integer retryCount;
@@ -76,6 +86,11 @@ public class MessageRecord {
      * 最大重试次数
      */
     private Integer maxRetryCount;
+
+    /**
+     * 下次重试时间
+     */
+    private LocalDateTime nextRetryTime;
 
     /**
      * 错误信息
