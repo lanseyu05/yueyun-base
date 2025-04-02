@@ -292,7 +292,7 @@ public class EasyExcelServiceImpl implements EasyExcelService {
 
                 @Override
                 public Integer getTotalRows() {
-                    return context.readSheetHolder().getTotal();
+                    return context.readSheetHolder().getApproximateTotalRowNumber();
                 }
             });
         }

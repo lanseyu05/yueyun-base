@@ -1,19 +1,15 @@
 package online.yueyun.ai.service.impl;
 
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatCompletionResult;
+import com.theokanning.openai.completion.chat.ChatMessage;
+import com.theokanning.openai.service.OpenAiService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import online.yueyun.ai.model.AiRequest;
 import online.yueyun.ai.model.AiResponse;
 import online.yueyun.ai.service.AiService;
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,13 +23,15 @@ import java.util.Map;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class DefaultAiServiceImpl implements AiService {
 
-    @Autowired
-    private ChatClient chatClient;
+    @Value("${openai.api-key}")
+    private String apiKey;
 
-    @Autowired(required = false)
-    private EmbeddingClient embeddingClient;
+    private OpenAiService getOpenAiService() {
+        return new OpenAiService(apiKey);
+    }
 
     @Override
     public AiResponse chat(AiRequest request) {
@@ -43,19 +41,26 @@ public class DefaultAiServiceImpl implements AiService {
                 return AiResponse.error("请求参数无效");
             }
 
-            // 2. 构建提示词
-            PromptTemplate promptTemplate = new PromptTemplate(request.getPrompt());
-            Prompt prompt = promptTemplate.create(request.getVariables());
+            // 2. 构建消息
+            List<ChatMessage> messages = new ArrayList<>();
+            messages.add(new ChatMessage("system", "你是一个专业的AI助手，请根据用户的问题提供准确的回答。"));
+            messages.add(new ChatMessage("user", request.getPrompt()));
 
-            // 3. 调用AI服务
-            ChatResponse response = chatClient.call(prompt);
+            // 3. 构建请求
+            ChatCompletionRequest completionRequest = ChatCompletionRequest.builder()
+                    .model("gpt-3.5-turbo")
+                    .messages(messages)
+                    .build();
 
-            // 4. 处理响应
-            if (response == null || response.getResult() == null) {
+            // 4. 调用AI服务
+            ChatCompletionResult result = getOpenAiService().createChatCompletion(completionRequest);
+
+            // 5. 处理响应
+            if (result == null || result.getChoices() == null || result.getChoices().isEmpty()) {
                 return AiResponse.error("AI服务返回结果为空");
             }
 
-            return AiResponse.success(response.getResult().getOutput().getContent());
+            return AiResponse.success(result.getChoices().get(0).getMessage().getContent());
         } catch (Exception e) {
             log.error("AI服务调用失败: {}", e.getMessage(), e);
             return AiResponse.error("AI服务调用失败: " + e.getMessage());
@@ -64,28 +69,23 @@ public class DefaultAiServiceImpl implements AiService {
 
     @Override
     public List<Double> getEmbedding(String text) {
-        try {
-            if (!StringUtils.hasText(text)) {
-                throw new IllegalArgumentException("文本内容不能为空");
-            }
-
-            Document document = new Document(text);
-            return embeddingClient.embed(document);
-        } catch (Exception e) {
-            log.error("获取文本向量失败: {}", e.getMessage(), e);
-            throw new RuntimeException("获取文本向量失败", e);
-        }
+        throw new UnsupportedOperationException("暂不支持获取文本向量");
     }
 
     @Override
     public String generateText(String prompt) {
         try {
-            List<Message> messages = new ArrayList<>();
-            messages.add(new SystemMessage("你是一个专业的文本生成助手，请根据提示词生成高质量的文本内容。"));
-            messages.add(new UserMessage(prompt));
+            List<ChatMessage> messages = new ArrayList<>();
+            messages.add(new ChatMessage("system", "你是一个专业的文本生成助手，请根据提示词生成高质量的文本内容。"));
+            messages.add(new ChatMessage("user", prompt));
 
-            ChatResponse response = chatClient.call(new Prompt(messages));
-            return response.getResult().getOutput().getContent();
+            ChatCompletionRequest completionRequest = ChatCompletionRequest.builder()
+                    .model("gpt-3.5-turbo")
+                    .messages(messages)
+                    .build();
+
+            ChatCompletionResult result = getOpenAiService().createChatCompletion(completionRequest);
+            return result.getChoices().get(0).getMessage().getContent();
         } catch (Exception e) {
             log.error("生成文本失败", e);
             throw new RuntimeException("生成文本失败", e);
@@ -95,11 +95,13 @@ public class DefaultAiServiceImpl implements AiService {
     @Override
     public String generateTextWithTemplate(String template, Map<String, Object> variables) {
         try {
-            PromptTemplate promptTemplate = new PromptTemplate(template);
-            Prompt prompt = promptTemplate.create(variables);
-            
-            ChatResponse response = chatClient.call(prompt);
-            return response.getResult().getOutput().getContent();
+            // 替换模板变量
+            String prompt = template;
+            for (Map.Entry<String, Object> entry : variables.entrySet()) {
+                prompt = prompt.replace("{" + entry.getKey() + "}", String.valueOf(entry.getValue()));
+            }
+
+            return generateText(prompt);
         } catch (Exception e) {
             log.error("通过模板生成文本失败", e);
             throw new RuntimeException("通过模板生成文本失败", e);

@@ -84,7 +84,7 @@ public class ExcelUtils {
     public List<List<String>> buildHeadRowList(Class<?> clazz) {
         List<String> headList = buildHeadList(clazz);
         return headList.stream()
-                .map(head -> Collections.singletonList(head))
+                .map(Collections::singletonList)
                 .collect(Collectors.toList());
     }
 } 

@@ -27,14 +27,14 @@ public class WeChatMessageSender implements MessageSender {
                 .templateId(request.getTemplateId())
                 .toUser(String.join(",", request.getReceivers()))
                 .build();
-            
+
             // 设置模板数据
             if (request.getParams() != null) {
-                request.getParams().forEach((key, value) -> 
+                request.getParams().forEach((key, value) ->
                     templateMessage.addData(new WxMpTemplateData(key, value.toString()))
                 );
             }
-            
+
             // 发送消息
             String msgId = wxMpService.getTemplateMsgService().sendTemplateMsg(templateMessage);
             return msgId != null;
@@ -48,4 +48,4 @@ public class WeChatMessageSender implements MessageSender {
     public String getChannel() {
         return MessageChannelEnum.WECHAT.getCode();
     }
-} 
+}

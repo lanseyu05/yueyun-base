@@ -1,0 +1,125 @@
+# XXL-JOB配置示例
+# 将此配置添加到应用的application.yml文件中
+
+yueyun:
+  xxl:
+    job:
+      # 是否启用XXL-JOB，默认为true
+      enabled: true
+      
+      # 调度中心配置
+      admin:
+        # 调度中心地址，多个地址用逗号分隔
+        addresses: http://xxl-job-admin.example.com/xxl-job-admin
+      
+      # 执行器配置
+      executor:
+        # 执行器应用名称，默认为spring.application.name，如果未设置则使用xxl-job-executor
+        app-name: ${spring.application.name:yueyun-service}
+        
+        # 执行器注册方式，可选值：AUTO(0)自动注册、IP(1)、HOSTNAME(2)
+        address-type: AUTO
+        
+        # 执行器IP，为空则自动获取
+        ip: 
+        
+        # 执行器端口，默认为9999
+        port: 9999
+        
+        # 执行器日志路径，默认为./logs/xxl-job
+        log-path: ./logs/xxl-job
+        
+        # 执行器日志保留天数，默认为30天
+        log-retention-days: 30
+        
+        # 执行器访问令牌，为空则不需要令牌
+        access-token:
+      
+      # 报警通知配置
+      alarm:
+        # 是否启用报警通知
+        enabled: true
+        
+        # 报警通知器，可配置多个，如log,email,dingtalk,wechatwork
+        notifiers:
+          - log
+          # - email
+          # - dingtalk
+          # - wechatwork
+        
+        # 邮件报警配置
+        email:
+          # 是否启用邮件报警
+          enabled: false
+          # 发件人地址
+          from: no-reply@example.com
+          # 收件人地址，多个用逗号分隔
+          to: admin@example.com
+          # 是否包含堆栈信息
+          include-stack-trace: true
+        
+        # 钉钉报警配置
+        ding-talk:
+          # 是否启用钉钉报警
+          enabled: false
+          # 钉钉机器人webhook地址
+          web-hook-url: https://oapi.dingtalk.com/robot/send?access_token=xxx
+          # 钉钉机器人安全密钥
+          secret: SEC000000000000000000000
+          # @开发人员手机号，多个用逗号分隔
+          at-mobiles: 13800138000,13900139000
+          # 是否@所有人
+          at-all: false
+        
+        # 企业微信报警配置
+        we-chat-work:
+          # 是否启用企业微信报警
+          enabled: false
+          # 企业微信机器人webhook地址
+          web-hook-url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
+          # 提及用户ID列表，多个用|分隔
+          mentioned-list: wangwu|lisi
+          # 提及手机号列表，多个用|分隔
+          mentioned-mobile-list: 13800138000|13900139000
+
+# 以下是使用示例，在实际应用的Spring配置文件中配置
+spring:
+  application:
+    name: yueyun-example-service
+  
+  # 配置邮件发送功能（用于邮件报警）
+  mail:
+    host: smtp.example.com
+    port: 25
+    username: no-reply@example.com
+    password: password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# 可选：配置Logback将XXL-JOB日志单独输出到文件
+logging:
+  level:
+    com.xxl.job: info
+
+# ======================================================
+# XXL-JOB任务配置示例（在XXL-JOB调度中心配置，这里仅作为参考）
+# ======================================================
+
+# 示例1：自定义任务处理器
+# - 执行器：yueyun-example-service
+# - JobHandler：sampleJobHandler
+# - 调度类型：CRON
+# - CRON表达式：0 0 1 * * ?
+# - 执行参数：{"name": "test", "count": 10}
+
+# 示例2：使用通用调度器调用服务方法
+# - 执行器：yueyun-example-service
+# - JobHandler：scheduleJobHandler
+# - 调度类型：CRON
+# - CRON表达式：0 0 9 * * ?
+# - 执行参数：userService.sendDailyReport
+# 说明：将调用userService这个Bean的sendDailyReport方法，无需编写任务处理器 

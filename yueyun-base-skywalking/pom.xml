@@ -11,6 +11,8 @@
     </parent>
     
     <artifactId>yueyun-base-skywalking</artifactId>
+    <name>yueyun-base-skywalking</name>
+    <description>悦芸基础组件库 - SkyWalking模块</description>
     
     <properties>
         <java.version>17</java.version>
@@ -20,15 +22,22 @@
         <skywalking.version>9.0.0</skywalking.version>
         <elasticsearch.version>7.17.10</elasticsearch.version>
         <lombok.version>1.18.30</lombok.version>
-        <jackson.version>2.15.3</jackson.version>
     </properties>
     
     <dependencies>
-        <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>compile</scope>
         </dependency>
+        <!-- Common -->
+        <dependency>
+            <groupId>online.yueyun</groupId>
+            <artifactId>yueyun-base-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
@@ -42,14 +51,16 @@
         <!-- SkyWalking -->
         <dependency>
             <groupId>org.apache.skywalking</groupId>
-            <artifactId>apm-toolkit-trace</artifactId>
-            <version>${skywalking.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-toolkit-logback-1.x</artifactId>
-            <version>${skywalking.version}</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.skywalking</groupId>-->
+<!--            <artifactId>apm-toolkit-trace</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.skywalking</groupId>-->
+<!--            <artifactId>apm-toolkit-webflux</artifactId>-->
+<!--        </dependency>-->
         
         <!-- Elasticsearch -->
         <dependency>
@@ -61,21 +72,6 @@
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
-        </dependency>
-        
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <optional>true</optional>
-        </dependency>
-        
-        <!-- Jackson -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         
         <!-- Test -->

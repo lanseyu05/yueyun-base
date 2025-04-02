@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>online.yueyun</groupId>
@@ -9,54 +10,60 @@
     </parent>
 
     <artifactId>yueyun-base-ai</artifactId>
-    <version>1.0.0</version>
     <name>yueyun-base-ai</name>
-    <description>悦芸AI基础组件库，提供AI接入和常用功能</description>
+    <description>悦芸基础组件库 - AI模块</description>
 
     <dependencies>
-        <!-- Spring Boot 基础依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        
-        <!-- Spring AI 依赖 -->
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter</artifactId>
-        </dependency>
-        
-        <!-- 基础公共模块依赖 -->
+        <!-- Common -->
         <dependency>
             <groupId>online.yueyun</groupId>
             <artifactId>yueyun-base-common</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
-        
-        <!-- 测试依赖 -->
+
+        <!-- OpenAI -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>service</artifactId>
+            <version>0.18.2</version>
+        </dependency>
+
+        <!-- 百度文心一言 -->
+        <dependency>
+            <groupId>com.baidu.aip</groupId>
+            <artifactId>java-sdk</artifactId>
+            <version>4.16.17</version>
         </dependency>
 
         <!-- Spring AI -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai</artifactId>
-            <version>0.8.1</version>
+            <artifactId>spring-ai-core</artifactId>
+            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
-            <version>0.8.1</version>
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <version>0.7.1</version>
         </dependency>
-        
-        <!-- 其他依赖 -->
+
+        <!-- Test -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
 </project>

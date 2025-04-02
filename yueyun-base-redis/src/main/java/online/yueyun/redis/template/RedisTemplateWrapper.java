@@ -249,7 +249,7 @@ public class RedisTemplateWrapper {
      * @param consumer 操作函数
      */
     public void executeWithTransaction(Consumer<RedisOperations<String, Object>> consumer) {
-        redisTemplate.execute(new SessionCallback<Object>() {
+        redisTemplate.execute(new SessionCallback<>() {
             @Override
             public Object execute(RedisOperations operations) {
                 operations.multi();

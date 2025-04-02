@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>online.yueyun</groupId>
         <artifactId>yueyun-base</artifactId>
@@ -11,28 +11,33 @@
 
     <artifactId>yueyun-base-redis</artifactId>
     <name>yueyun-base-redis</name>
-    <description>YueYun Base Redis Module</description>
-
-
+    <description>悦芸基础组件库 - Redis模块</description>
 
     <dependencies>
-        <!-- Spring Boot Redis -->
+        <!-- Common -->
+        <dependency>
+            <groupId>online.yueyun</groupId>
+            <artifactId>yueyun-base-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Redis -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- Lettuce 连接池依赖 -->
+        <!-- Redisson -->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-pool2</artifactId>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Spring Boot Configuration Processor -->
+        <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

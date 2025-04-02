@@ -28,7 +28,7 @@ public class ExcelProperties {
     /**
      * 上传临时目录
      */
-    private String uploadTempDir = System.getProperty("java.io.tmpdir");
+    private String uploadDir = System.getProperty("java.io.tmpdir");
 
     /**
      * 最大上传大小（默认10MB）

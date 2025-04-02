@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Excel配置类
@@ -25,22 +26,7 @@ import org.springframework.core.type.AnnotationMetadata;
 @Configuration
 @EnableConfigurationProperties(ExcelProperties.class)
 @ConditionalOnProperty(prefix = "yueyun.excel", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class ExcelConfiguration implements ImportBeanDefinitionRegistrar {
-
-    @Override
-    public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
-        // 检查是否已经注册了ExcelProperties
-        if (!registry.containsBeanDefinition("excelProperties")) {
-            log.info("注册Excel配置属性");
-            // 注册ExcelProperties
-            registry.registerBeanDefinition("excelProperties",
-                    BeanDefinitionBuilder
-                            .genericBeanDefinition(ExcelProperties.class)
-                            .setAutowireMode(AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR)
-                            .getBeanDefinition());
-        }
-    }
-
+public class ExcelConfiguration {
     /**
      * 配置Excel服务
      *

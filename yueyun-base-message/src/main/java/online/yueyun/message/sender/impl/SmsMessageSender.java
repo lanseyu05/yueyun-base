@@ -28,10 +28,10 @@ public class SmsMessageSender implements MessageSender {
         }
 
         try {
-            log.info("发送短信消息，接收人: {}, 内容: {}", 
-                    String.join(",", request.getReceivers()), 
+            log.info("发送短信消息，接收人: {}, 内容: {}",
+                    String.join(",", request.getReceivers()),
                     request.getContent());
-            
+
             // 使用默认的短信服务提供商
             return smsProviderFactory.getDefaultProvider().send(request);
         } catch (Exception e) {
@@ -44,4 +44,4 @@ public class SmsMessageSender implements MessageSender {
     public String getChannel() {
         return MessageChannelEnum.SMS.getCode();
     }
-} 
+}

@@ -11,8 +11,8 @@
     </parent>
     
     <artifactId>yueyun-base-mybatisplus</artifactId>
-    <name>YueYun Base MyBatisPlus</name>
-    <description>YueYun框架MyBatisPlus增强模块</description>
+    <name>yueyun-base-mybatisplus</name>
+    <description>悦芸基础组件库 - MyBatis-Plus模块</description>
     
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -33,15 +33,7 @@
         <!-- MyBatis Plus -->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
-            <version>${mybatis-plus.version}</version>
-        </dependency>
-        
-        <!-- MyBatis Plus Extension -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-extension</artifactId>
-            <version>${mybatis-plus.version}</version>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
         </dependency>
         
         <!-- Spring Boot Configuration Processor -->
@@ -51,21 +43,13 @@
             <optional>true</optional>
         </dependency>
         
-        <!-- Spring JDBC -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
-        </dependency>
-        
         <!-- Common Module -->
         <dependency>
             <groupId>online.yueyun</groupId>
             <artifactId>yueyun-base-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
 
-        
         <!-- MySQL Driver -->
         <dependency>
             <groupId>com.mysql</groupId>
@@ -79,6 +63,20 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <!-- Dynamic DataSource -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
+            <version>4.3.0</version>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project> 

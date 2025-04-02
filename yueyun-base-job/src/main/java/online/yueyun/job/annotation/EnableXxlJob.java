@@ -1,8 +1,5 @@
 package online.yueyun.job.annotation;
 
-import online.yueyun.job.config.XxlJobAutoConfiguration;
-import org.springframework.context.annotation.Import;
-
 import java.lang.annotation.*;
 
 /**
@@ -15,6 +12,6 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(XxlJobAutoConfiguration.class)
+//@Import(XxlJobAutoConfiguration.class)
 public @interface EnableXxlJob {
 } 

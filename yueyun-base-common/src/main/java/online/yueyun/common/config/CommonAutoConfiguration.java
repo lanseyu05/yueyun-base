@@ -1,11 +1,13 @@
 package online.yueyun.common.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import lombok.RequiredArgsConstructor;
+import online.yueyun.common.interceptor.TokenInterceptor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * 通用功能自动配置类
@@ -17,30 +19,17 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(CommonProperties.class)
 @ConditionalOnProperty(prefix = "yueyun.common", name = "enabled", havingValue = "true", matchIfMissing = true)
 @ComponentScan("online.yueyun.common")
-public class CommonAutoConfiguration {
-
+@RequiredArgsConstructor
+public class CommonAutoConfiguration implements WebMvcConfigurer {
     /**
-     * 配置Properties
+     * Token拦截器
      */
-    private final CommonProperties properties;
+    private final TokenInterceptor tokenInterceptor;
 
-    /**
-     * 构造方法
-     *
-     * @param properties 配置属性
-     */
-    public CommonAutoConfiguration(CommonProperties properties) {
-        this.properties = properties;
-    }
-
-    /**
-     * 全局异常处理器
-     *
-     * @return GlobalExceptionHandler
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    public GlobalExceptionHandler globalExceptionHandler() {
-        return new GlobalExceptionHandler();
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(tokenInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns("/error");
     }
 } 

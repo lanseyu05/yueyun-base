@@ -1,27 +1,21 @@
 package online.yueyun.message.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import online.yueyun.common.entity.BaseEntity;
 import online.yueyun.message.enums.MessageChannelEnum;
 import online.yueyun.message.enums.MessageStatusEnum;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 消息记录实体
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @TableName("message_record")
-public class MessageRecord {
-    /**
-     * 主键ID
-     */
-    @TableId(type = IdType.AUTO)
-    private Long id;
-
+public class MessageRecord extends BaseEntity {
     /**
      * 消息幂等ID
      */
@@ -96,16 +90,6 @@ public class MessageRecord {
      * 错误信息
      */
     private String errorMessage;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
 
     /**
      * 发送时间

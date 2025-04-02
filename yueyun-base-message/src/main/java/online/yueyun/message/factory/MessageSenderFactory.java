@@ -16,10 +16,13 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MessageSenderFactory {
-    private final List<MessageSender> messageSenders;
+    private List<MessageSender> messageSenders;
     private final Map<String, MessageSender> senderMap = new HashMap<>();
+
+    public MessageSenderFactory(List<MessageSender> messageSenders) {
+        this.messageSenders = messageSenders;
+    }
 
     /**
      * 初始化方法，加载所有消息发送器

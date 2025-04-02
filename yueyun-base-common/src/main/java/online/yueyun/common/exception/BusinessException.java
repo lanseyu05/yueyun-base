@@ -5,6 +5,8 @@ import lombok.EqualsAndHashCode;
 import online.yueyun.common.result.IResultCode;
 import online.yueyun.common.result.ResultCode;
 
+import java.io.Serial;
+
 /**
  * 业务异常
  *
@@ -15,6 +17,7 @@ import online.yueyun.common.result.ResultCode;
 @EqualsAndHashCode(callSuper = true)
 public class BusinessException extends RuntimeException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
